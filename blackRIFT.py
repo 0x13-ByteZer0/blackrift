@@ -2540,6 +2540,7 @@ def parse_args():
     target.add_argument("--no-include-apex", dest="include_apex", action="store_false", help="do not include the apex domain with subfinder results")
     target.add_argument("--host-header", help="explicit Host header")
     target.add_argument("--header", action="append", help="extra HTTP header, 'Name: value'")
+    target.add_argument("--targets-file", help="path to newline-separated targets file (host[:port] per line)")
 
     assess_group = parser.add_argument_group("assessment")
     assess_group.add_argument("--pid-file", action="append", default=list(DEFAULT_PID_FILES), help="candidate nginx pid file")
@@ -2721,6 +2722,46 @@ def main():
     # show ASCII banner before running
     try:
         print_cli_banner()
+        # If a targets file is provided, process each target sequentially.
+        if getattr(args, "targets_file", None):
+            try:
+                with open(args.targets_file, "r", encoding="utf-8") as fh:
+                    targets = [ln.strip() for ln in fh if ln.strip() and not ln.strip().startswith("#")]
+            except Exception as exc:
+                print(f"failed to read targets file: {exc}", file=sys.stderr)
+                return 1
+
+            if not targets:
+                print("no targets found in targets file", file=sys.stderr)
+                return 1
+
+            exit_code = 0
+            for idx, targ in enumerate(targets, start=1):
+                print(f"\n[targets-file] target {idx}/{len(targets)}: {targ}", flush=True)
+                current = copy.copy(args)
+                current.target = targ
+                # recompute per-target host/port and subfinder decision
+                try:
+                    host, port = parse_target(targ, current.port)
+                except Exception:
+                    host, port = targ, current.port
+                current.host = host
+                current.port = port
+                current.subfinder_domain = normalize_dns_name(host)
+                current.use_subfinder = current.subfinder is True or (
+                    current.subfinder is None and should_auto_subfinder(targ)
+                )
+                # run assessment/fanout for this target
+                try:
+                    rc = run_with_optional_subfinder(current)
+                    if isinstance(rc, int) and rc != 0:
+                        exit_code = rc
+                except Exception as exc:
+                    print(f"[targets-file] {targ} failed: {exc}", file=sys.stderr)
+                    exit_code = exit_code or 1
+
+            return exit_code
+
         return run_with_optional_subfinder(args)
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
