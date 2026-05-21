@@ -2541,6 +2541,7 @@ def parse_args():
     target.add_argument("--host-header", help="explicit Host header")
     target.add_argument("--header", action="append", help="extra HTTP header, 'Name: value'")
     target.add_argument("--targets-file", help="path to newline-separated targets file (host[:port] per line)")
+    target.add_argument("--jobs", "-j", type=int, default=1, help="parallel jobs; 1 = sequential")
 
     assess_group = parser.add_argument_group("assessment")
     assess_group.add_argument("--pid-file", action="append", default=list(DEFAULT_PID_FILES), help="candidate nginx pid file")
@@ -2722,7 +2723,7 @@ def main():
     # show ASCII banner before running
     try:
         print_cli_banner()
-        # If a targets file is provided, process each target sequentially.
+        # If a targets file is provided, process each target sequentially or in parallel.
         if getattr(args, "targets_file", None):
             try:
                 with open(args.targets_file, "r", encoding="utf-8") as fh:
@@ -2735,30 +2736,91 @@ def main():
                 print("no targets found in targets file", file=sys.stderr)
                 return 1
 
+            # Sequential in-process execution (default)
+            if getattr(args, "jobs", 1) <= 1:
+                exit_code = 0
+                for idx, targ in enumerate(targets, start=1):
+                    print(f"\n[targets-file] target {idx}/{len(targets)}: {targ}", flush=True)
+                    current = copy.copy(args)
+                    current.target = targ
+                    # recompute per-target host/port and subfinder decision
+                    try:
+                        host, port = parse_target(targ, current.port)
+                    except Exception:
+                        host, port = targ, current.port
+                    current.host = host
+                    current.port = port
+                    current.subfinder_domain = normalize_dns_name(host)
+                    current.use_subfinder = current.subfinder is True or (
+                        current.subfinder is None and should_auto_subfinder(targ)
+                    )
+                    # run assessment/fanout for this target
+                    try:
+                        rc = run_with_optional_subfinder(current)
+                        if isinstance(rc, int) and rc != 0:
+                            exit_code = rc
+                    except Exception as exc:
+                        print(f"[targets-file] {targ} failed: {exc}", file=sys.stderr)
+                        exit_code = exit_code or 1
+
+                return exit_code
+
+            # Parallel: spawn child blackRIFT processes for each target
+            from pathlib import Path
+            import concurrent.futures
+
+            script_path = Path(__file__).resolve()
+            orig_argv = sys.argv[1:]
+
+            # Filter out --targets-file, --jobs/-j and any --target occurrences
+            flags_to_strip = ("--targets-file", "--jobs", "-j", "--target")
+            filtered_argv = []
+            i = 0
+            while i < len(orig_argv):
+                a = orig_argv[i]
+                removed = False
+                for f in flags_to_strip:
+                    if a == f or a.startswith(f + "=") or (f == "-j" and a.startswith("-j") and a != "-j"):
+                        # skip this token; if it has a separate value, skip that too
+                        if "=" not in a and a in ("--targets-file", "--jobs", "-j", "--target"):
+                            if i + 1 < len(orig_argv) and not orig_argv[i + 1].startswith("-"):
+                                i += 1
+                        removed = True
+                        break
+                if removed:
+                    i += 1
+                    continue
+                filtered_argv.append(a)
+                i += 1
+
+            def safe_name(name: str) -> str:
+                return re.sub(r"[^A-Za-z0-9_.-]+", "_", name)
+
+            def make_cmd_for_target(t: str):
+                host_only = t.split(":", 1)[0]
+                args_for_target = []
+                for tok in filtered_argv:
+                    if "{host}" in tok or "{safe_host}" in tok:
+                        tok = tok.replace("{host}", host_only).replace("{safe_host}", safe_name(host_only))
+                    args_for_target.append(tok)
+                args_for_target += ["--target", t]
+                return [sys.executable, str(script_path)] + args_for_target
+
             exit_code = 0
-            for idx, targ in enumerate(targets, start=1):
-                print(f"\n[targets-file] target {idx}/{len(targets)}: {targ}", flush=True)
-                current = copy.copy(args)
-                current.target = targ
-                # recompute per-target host/port and subfinder decision
-                try:
-                    host, port = parse_target(targ, current.port)
-                except Exception:
-                    host, port = targ, current.port
-                current.host = host
-                current.port = port
-                current.subfinder_domain = normalize_dns_name(host)
-                current.use_subfinder = current.subfinder is True or (
-                    current.subfinder is None and should_auto_subfinder(targ)
-                )
-                # run assessment/fanout for this target
-                try:
-                    rc = run_with_optional_subfinder(current)
-                    if isinstance(rc, int) and rc != 0:
-                        exit_code = rc
-                except Exception as exc:
-                    print(f"[targets-file] {targ} failed: {exc}", file=sys.stderr)
-                    exit_code = exit_code or 1
+            max_workers = max(1, int(getattr(args, "jobs", 1)))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+                future_map = {ex.submit(subprocess.run, make_cmd_for_target(t), cwd=str(script_path.parent)): t for t in targets}
+                for fut in concurrent.futures.as_completed(future_map):
+                    t = future_map[fut]
+                    try:
+                        completed = fut.result()
+                        rc = getattr(completed, "returncode", 0)
+                        if rc != 0:
+                            print(f"[targets-file] {t} exited {rc}", file=sys.stderr)
+                            exit_code = exit_code or rc or 1
+                    except Exception as exc:
+                        print(f"[targets-file] {t} raised {exc}", file=sys.stderr)
+                        exit_code = exit_code or 1
 
             return exit_code
 

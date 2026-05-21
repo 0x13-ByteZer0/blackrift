@@ -274,44 +274,39 @@ python blackRIFT.py --target 127.0.0.1:19321 --no-subfinder
 _Este README foi gerado e atualizado automaticamente. Se quiser, eu posso adicionar exemplos
 de script PowerShell para rodar scans em lote ou integrar execução paralela._
 
-## Scripts auxiliares (multi-OS em Python)
+## Processar múltiplos alvos (cross‑platform)
 
-Este repositório inclui um helper Python multiplataforma para rodar `blackRIFT` em vários
-alvos listados em um arquivo: `scripts/run_targets.py`.
+O `blackRIFT.py` oferece suporte nativo a processamento em lote através de `--targets-file` e
+paralelismo via `--jobs` (ou `-j`). Use um arquivo com um alvo por linha (host[:port]).
 
 Formato do arquivo de targets (`scans/targets.txt`):
 ```
-# comentários iniciam com '#'
+# exemplo de targets
 example.com
 api.example.com:443
 192.0.2.5:19321
 ```
 
-Exemplos de uso (qualquer OS com Python):
+Exemplos (Windows PowerShell):
 
-# Executa sequencialmente (padrão)
 ```powershell
-python scripts/run_targets.py scans/targets.txt
+python blackRIFT.py --targets-file scans/targets.txt
+python blackRIFT.py --targets-file scans/targets.txt --jobs 4
 ```
 
-# Executa com 4 workers em paralelo
+Exemplos (Linux / macOS - bash):
+
 ```bash
-python scripts/run_targets.py scans/targets.txt --jobs 4
+python3 blackRIFT.py --targets-file scans/targets.txt
+python3 blackRIFT.py --targets-file scans/targets.txt --jobs 4
 ```
 
-# Passa argumentos extras para `blackRIFT` (ex.: definir diretório de artefatos)
-```powershell
-python scripts/run_targets.py scans/targets.txt --extra-args "--artifact-dir artifacts"
-```
+Se quiser que o `--subfinder-output` gere um arquivo por host, use placeholders `{host}` ou
+`{safe_host}` (o helper interno expande automaticamente `{safe_host}` para um nome de
+arquivo seguro).
 
-# Usando placeholder para saída do subfinder por host
-```powershell
-python scripts/run_targets.py scans/targets.txt --subfinder --subfinder-output scans/subfinder_{safe_host}.txt
-```
+O comportamento padrão é processar alvos sequencialmente; passe `--jobs N` para executar
+até N processos simultâneos, cada um invocando `blackRIFT.py --target <host[:port]>`.
 
-Observações:
-- O helper localiza `blackRIFT.py` automaticamente quando colocado no diretório `scripts/`.
-- Para apontar um `blackRIFT.py` alternativo, use `--blackrift path/to/blackRIFT.py`.
-- Use `--no-subfinder` para desabilitar descoberta automática quando estiver processando domínios.
 
 
