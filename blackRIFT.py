@@ -43,13 +43,10 @@ DEFAULT_PID_FILES = (
 
 # ASCII banner shown when the script is run directly
 BANNER = r"""
-    ____  _            _    ____  _ _   
- |  _ \| | __ _  ___| | _|  _ \(_) |__
- | |_) | |/ _` |/ __| |/ / |_) | | '_ \
- |  _ <| | (_| | (__|   <|  _ <| | |_) |
- |_| \_\_|\__,_|\___|_|\_\_| \_\_|_.__/ 
-
- BlackRift — NGINX Rift assessment tool {version}
+╔════════════════════════════════════════════════════════════════════════╗
+║  blackRIFT — NGINX Rift assessment tool                                ║
+║  Version: {version}                                                     ║
+╚════════════════════════════════════════════════════════════════════════╝
 """
 DEFAULT_PROBE_CRASH_ADDR = 0x303030303030
 DEFAULT_PROC_MEM_MAX_REGION = 256 * 1024 * 1024

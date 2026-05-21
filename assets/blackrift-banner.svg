@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" role="img" aria-label="BlackRift banner">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" role="img" aria-label="blackRIFT banner">
   <defs>
     <linearGradient id="g" x1="0" x2="1">
       <stop offset="0%" stop-color="#0f1724"/>
@@ -22,7 +22,7 @@
     </g>
     <!-- title -->
     <g transform="translate(140,48)">
-      <text x="0" y="0" font-family="Segoe UI, Roboto, Arial, sans-serif" font-size="56" font-weight="700" fill="#ffffff">BlackRift</text>
+      <text x="0" y="0" font-family="Segoe UI, Roboto, Arial, sans-serif" font-size="56" font-weight="700" fill="#ffffff">blackRIFT</text>
       <text x="0" y="44" font-family="Segoe UI, Roboto, Arial, sans-serif" font-size="18" fill="#b8d8df">NGINX Rift assessment tool — authorized testing only</text>
     </g>
   </g>
