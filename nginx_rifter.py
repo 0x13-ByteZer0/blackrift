@@ -40,6 +40,17 @@ DEFAULT_PID_FILES = (
     "/run/nginx.pid",
     "/var/run/nginx.pid",
 )
+
+# ASCII banner shown when the script is run directly
+BANNER = r"""
+    ____  _            _    ____  _ _   
+ |  _ \| | __ _  ___| | _|  _ \(_) |__
+ | |_) | |/ _` |/ __| |/ / |_) | | '_ \
+ |  _ <| | (_| | (__|   <|  _ <| | |_) |
+ |_| \_\_|\__,_|\___|_|\_\_| \_\_|_.__/ 
+
+ BlackRift — NGINX Rift assessment tool {version}
+"""
 DEFAULT_PROBE_CRASH_ADDR = 0x303030303030
 DEFAULT_PROC_MEM_MAX_REGION = 256 * 1024 * 1024
 DEFAULT_MEM_CHUNK_SIZE = 256 * 1024
@@ -152,6 +163,21 @@ class Reporter:
     def info(self, text):
         if self.verbose:
             self.line(f"{self.c.cyan('[*]')} {text}")
+
+
+def print_cli_banner():
+    """Print a compact ASCII banner with coloring (respects NO_COLOR)."""
+    p = Palette()
+    art = BANNER.format(version=TOOL_VERSION)
+    print()
+    for line in art.strip("\n").splitlines():
+        if line.strip():
+            # bold cyan
+            print(p.paint(line, "1;36"))
+        else:
+            print()
+    print(p.dim("=" * 78))
+    print()
 
 
 @dataclass
@@ -2688,7 +2714,9 @@ def run_with_optional_subfinder(args):
 
 def main():
     args = parse_args()
+    # show ASCII banner before running
     try:
+        print_cli_banner()
         return run_with_optional_subfinder(args)
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
