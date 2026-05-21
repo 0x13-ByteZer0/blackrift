@@ -1,5 +1,9 @@
 # BlackRift
 
+<p align="center">
+  <img src="assets/blackrift-banner.svg" alt="BlackRift banner" width="900">
+</p>
+
 BlackRift is a compact assessment-first tool for authorized NGINX Rift testing. It wraps the `nginx_rifter.py` workflow into a minimal repo and supports both single-target checks and subdomain fan-out through `subfinder`.
 
 Use it only against systems you own or are explicitly authorized to test.
