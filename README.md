@@ -274,3 +274,44 @@ python blackRIFT.py --target 127.0.0.1:19321 --no-subfinder
 _Este README foi gerado e atualizado automaticamente. Se quiser, eu posso adicionar exemplos
 de script PowerShell para rodar scans em lote ou integrar execução paralela._
 
+## Scripts auxiliares (multi-OS em Python)
+
+Este repositório inclui um helper Python multiplataforma para rodar `blackRIFT` em vários
+alvos listados em um arquivo: `scripts/run_targets.py`.
+
+Formato do arquivo de targets (`scans/targets.txt`):
+```
+# comentários iniciam com '#'
+example.com
+api.example.com:443
+192.0.2.5:19321
+```
+
+Exemplos de uso (qualquer OS com Python):
+
+# Executa sequencialmente (padrão)
+```powershell
+python scripts/run_targets.py scans/targets.txt
+```
+
+# Executa com 4 workers em paralelo
+```bash
+python scripts/run_targets.py scans/targets.txt --jobs 4
+```
+
+# Passa argumentos extras para `blackRIFT` (ex.: definir diretório de artefatos)
+```powershell
+python scripts/run_targets.py scans/targets.txt --extra-args "--artifact-dir artifacts"
+```
+
+# Usando placeholder para saída do subfinder por host
+```powershell
+python scripts/run_targets.py scans/targets.txt --subfinder --subfinder-output scans/subfinder_{safe_host}.txt
+```
+
+Observações:
+- O helper localiza `blackRIFT.py` automaticamente quando colocado no diretório `scripts/`.
+- Para apontar um `blackRIFT.py` alternativo, use `--blackrift path/to/blackRIFT.py`.
+- Use `--no-subfinder` para desabilitar descoberta automática quando estiver processando domínios.
+
+
