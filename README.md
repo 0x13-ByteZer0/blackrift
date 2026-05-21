@@ -37,7 +37,7 @@ python3 nginx_rifter.py \
   --target example.com \
   --scheme https \
   --port 443 \
-  --subfinder-output scans/subfinder_all_ipv7.txt
+  --subfinder-output scans/subfinder_all_example.txt
 ```
 
 Disable automatic subfinder for a domain-shaped host:
