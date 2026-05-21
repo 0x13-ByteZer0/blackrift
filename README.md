@@ -58,33 +58,151 @@ python blackRIFT.py --target 127.0.0.1:19321
 - Avaliar um domínio (o script poderá executar `subfinder` automaticamente se apropriado):
 
 ```powershell
-python blackRIFT.py --target example.com --scheme https --port 443
+## Instalação rápida
+
+### Windows (PowerShell)
+```powershell
+git clone https://github.com/0x13-ByteZer0/blackrift.git
+cd blackrift
+# (opcional) criar + ativar venv
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -V
 ```
+
+### Linux / macOS (bash)
+```bash
+git clone https://github.com/0x13-ByteZer0/blackrift.git
+cd blackrift
+# (opcional) criar + ativar venv
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -V
+```
+python blackRIFT.py --target example.com --scheme https --port 443
 
 ## Fan-out com `subfinder`
 O `subfinder` é usado para descobrir subdomínios quando `--target` for um domínio.
-Por padrão, quando aplicável, o script tenta executar a descoberta automaticamente.
+## Uso básico
+- Avaliar um alvo único (porta explícita)
+
+Windows (PowerShell):
+```powershell
+python blackRIFT.py --target 127.0.0.1:19321
+```
+
+Linux/macOS (bash):
+```bash
+python3 blackRIFT.py --target 127.0.0.1:19321
+```
+- Avaliar um domínio (o script poderá executar `subfinder` automaticamente se apropriado):
+
+Windows (PowerShell):
+```powershell
+python blackRIFT.py --target example.com --scheme https --port 443
+```
+
+Linux/macOS (bash):
+```bash
+python3 blackRIFT.py --target example.com --scheme https --port 443
+```
 
 - Forçar execução do `subfinder`:
+
+Windows (PowerShell) — forçar execução do `subfinder`:
 
 ```powershell
 python blackRIFT.py --target example.com --subfinder --subfinder-output scans/subfinder_example.txt
 ```
 
-- Desabilitar a descoberta automática (avaliar somente o `--target` passado):
+Linux/macOS (bash) — forçar execução do `subfinder`:
 
+```bash
+python3 blackRIFT.py --target example.com --subfinder --subfinder-output scans/subfinder_example.txt
+```
+python blackRIFT.py --target example.com --subfinder --subfinder-output scans/subfinder_example.txt
+```
+
+Desabilitar a descoberta automática (avaliar somente o `--target` passado):
+
+Windows (PowerShell):
 ```powershell
 python blackRIFT.py --target example.com --no-subfinder
 ```
 
+Linux/macOS (bash):
+```bash
+python3 blackRIFT.py --target example.com --no-subfinder
+```
+
+```powershell
+python blackRIFT.py --target example.com --no-subfinder
+Limitar hosts descobertos e tempo:
+
+Windows (PowerShell):
+```powershell
+python blackRIFT.py --target example.com --subfinder-max-hosts 30 --subfinder-timeout 120
+```
+
+Linux/macOS (bash):
+```bash
+python3 blackRIFT.py --target example.com --subfinder-max-hosts 30 --subfinder-timeout 120
+```
+
 - Limitar hosts descobertos e tempo:
 
+Se preferir só descobrir subdomínios sem rodar as avaliações, execute `subfinder` diretamente:
+
+Windows / Linux / macOS:
+```bash
+subfinder -d example.com -all -silent > scans/subfinder_only.txt
+```
 ```powershell
 python blackRIFT.py --target example.com --subfinder-max-hosts 30 --subfinder-timeout 120
 ```
 
 Se preferir só descobrir subdomínios sem rodar as avaliações, execute `subfinder` diretamente:
 
+## Processar múltiplos alvos: `--targets-file`
+Você pode passar um arquivo de texto com um alvo por linha (formato `host[:port]`). Linhas começando com `#` são ignoradas.
+
+Exemplo: `scans/targets.txt`
+
+```
+# exemplo de targets
+example.com
+api.example.com:443
+192.0.2.5:19321
+```
+
+Rodar diretamente com o argumento `--targets-file` (cross-platform):
+
+Windows (PowerShell):
+```powershell
+python blackRIFT.py --targets-file scans/targets.txt
+```
+
+Linux/macOS (bash):
+```bash
+python3 blackRIFT.py --targets-file scans/targets.txt
+```
+
+Ou usar os scripts auxiliares incluídos em `scripts/` (conveniência):
+
+Windows (PowerShell):
+```powershell
+.\scripts\run_targets.ps1 -TargetsFile scans/targets.txt
+```
+
+Linux/macOS (bash):
+```bash
+bash scripts/run_targets.sh scans/targets.txt
+# ou tornar executável
+chmod +x scripts/run_targets.sh
+./scripts/run_targets.sh scans/targets.txt
+```
+
+O script processa cada linha sequencialmente; para domínios ele aplica a mesma política de `subfinder` por alvo (use `--no-subfinder` para desabilitar a descoberta).
 ```powershell
 subfinder -d example.com -all -silent > scans/subfinder_only.txt
 ```
