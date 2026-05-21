@@ -2503,6 +2503,13 @@ def assess(args):
 def parse_args():
     show_advanced = "--advanced-help" in sys.argv
 
+    # show ASCII banner early when help is requested so `-h/--help` output includes it
+    if "-h" in sys.argv or "--help" in sys.argv:
+        try:
+            print_cli_banner()
+        except Exception:
+            pass
+
     def advanced(text):
         return text if show_advanced else argparse.SUPPRESS
 
